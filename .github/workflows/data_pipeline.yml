@@ -1,0 +1,54 @@
+name: Data Ingestion & Cleaning Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "src/**"
+      - "data/raw/Sample_dataset.csv"
+  workflow_dispatch:
+
+jobs:
+  run-data-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run data ingestion
+        run: |
+          echo "Running ingestion pipeline..."
+          python src/ingestion.py
+
+      - name: Run data cleaning
+        run: |
+          echo "Running cleaning pipeline..."
+          python src/cleaning.py
+
+      - name: Verify cleaned output
+        run: |
+          if [ ! -f data/processed/clean_customers.csv ]; then
+            echo "❌ Cleaned data not found!"
+            exit 1
+          fi
+          echo "✅ Cleaned data successfully created"
+
+      - name: Print dataset summary
+        run: |
+          python - <<EOF
+          import pandas as pd
+          df = pd.read_csv("data/processed/clean_customers.csv")
+          print("Rows:", df.shape[0])
+          print("Columns:", df.shape[1])
+          EOF
