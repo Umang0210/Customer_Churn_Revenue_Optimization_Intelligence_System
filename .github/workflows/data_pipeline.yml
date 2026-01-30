@@ -35,6 +35,15 @@ jobs:
       - name: Run data cleaning
         run: python src/cleaning.py
 
+      - name: Run feature engineering
+        run: python src/features.py
+
+      - name: Verify feature output
+        run: |
+          test -f data/processed/customer_features.csv
+          echo "✅ Feature dataset created"
+
+
       - name: Verify cleaned output
         run: |
           test -f data/processed/clean_customers.csv
