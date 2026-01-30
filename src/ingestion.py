@@ -33,7 +33,7 @@ def ingest_data():
 
     df = pd.read_csv(input_file)
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%d-%m-%y_%H-%M-%S")
     output_file = f"raw_snapshot_{timestamp}.csv"
     output_path = os.path.join(PROCESSED_DATA_DIR, output_file)
 
