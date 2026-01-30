@@ -21,8 +21,10 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Debug repo files
+      - name: Debug workspace files
         run: |
+          echo "PWD:"
+          pwd
           echo "Root directory contents:"
           ls -la
 
