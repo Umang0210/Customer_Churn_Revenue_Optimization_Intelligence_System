@@ -1,38 +1,17 @@
-# ----------------------------
-# Base image (small & stable)
-# ----------------------------
-FROM python:3.11-slim
+FROM python:3.11-slim  #Base image with Python 3.11     
 
-# ----------------------------
-# Environment hygiene
-# ----------------------------
-ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONDONTWRITEBYTECODE=1  #Environment hygiene
 ENV PYTHONUNBUFFERED=1
 
-# ----------------------------
-# Working directory
-# ----------------------------
-WORKDIR /app
+WORKDIR /app     # Set working directory
 
-# ----------------------------
-# Install dependencies
-# ----------------------------
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt .        # Copy requirements file
+RUN pip install --no-cache-dir -r requirements.txt      # Install dependencies
 
-# ----------------------------
-# Copy application code
-# ----------------------------
-COPY api/ api/
+COPY api/ api/ # Copy FastAPI application
 COPY models/ models/
 COPY src/ src/
 
-# ----------------------------
-# Expose API port
-# ----------------------------
-EXPOSE 8000
+EXPOSE 8000  # Expose FastAPI port 
 
-# ----------------------------
-# Start FastAPI app
-# ----------------------------
-CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8000"]  # Start FastAPI
