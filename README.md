@@ -72,9 +72,7 @@ DS-ML-DevOps/
 │   └── evaluate.py  
 ├── api/  
 │   └── app.py  
-├── models/  
-├── notebooks/  
-│   └── eda.ipynb  
+├── models/   
 ├── requirements.txt  
 └── README.md  
 
