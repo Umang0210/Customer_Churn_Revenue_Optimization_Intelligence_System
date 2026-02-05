@@ -30,7 +30,6 @@ def load_data():
     df = pd.read_csv(csv_path)
     return df
 
-
 # -----------------------------
 # EVALUATION
 # -----------------------------
