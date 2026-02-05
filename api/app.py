@@ -12,7 +12,6 @@ scaler = joblib.load("models/scaler.pkl")
 def health():
     return {"status": "ok"}
 
-
 @app.post("/predict")
 def predict(data: dict):
     df = pd.DataFrame([data])
