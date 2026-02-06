@@ -1,7 +1,7 @@
 # 📊 Customer Churn & Revenue Optimization Intelligence System  
 **End-to-End Data Science + Machine Learning + DevOps + Web Application**
 
-> **Status:** 🚧 In Development | **Version:** 0.8.0-beta
+> **Status:** 🚧 In Development |
 
 A production-oriented decision intelligence system that predicts customer churn, quantifies revenue risk, and empowers business users. This project demonstrates a full lifecycle from raw data to deployed application, with ongoing enhancements for cloud and BI integration.
 
