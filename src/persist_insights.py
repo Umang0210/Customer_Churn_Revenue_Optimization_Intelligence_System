@@ -45,3 +45,53 @@ with open(METADATA_PATH) as f:
 model_version = metadata["model_version"]
 timestamp = datetime.utcnow()
 
+
+# -----------------------------
+# PREDICTIONS
+# -----------------------------
+X = df[feature_list]
+df["churn_probability"] = model.predict_proba(X)[:, 1]
+
+df["risk_bucket"] = pd.cut(
+    df["churn_probability"],
+    bins=[0, 0.4, 0.7, 1.0],
+    labels=["LOW", "MEDIUM", "HIGH"]
+)
+
+
+# -----------------------------
+# BUSINESS METRICS
+# -----------------------------
+df["revenue"] = df["monthlycharges"] * df["tenure"]
+df["expected_revenue_loss"] = df["churn_probability"] * df["revenue"]
+df["priority_score"] = df["expected_revenue_loss"]
+
+
+# -----------------------------
+# TABLE 1: CUSTOMER PREDICTIONS
+# -----------------------------
+customer_predictions = df[[
+    "customerid",
+    "churn_probability",
+    "risk_bucket",
+    "revenue",
+    "expected_revenue_loss",
+    "priority_score"
+]].copy()
+
+customer_predictions.rename(
+    columns={"customerid": "customer_id"},
+    inplace=True
+)
+
+customer_predictions["model_version"] = model_version
+customer_predictions["prediction_timestamp"] = timestamp
+
+customer_predictions.to_sql(
+    "customers_predictions",
+    engine,
+    if_exists="replace",
+    index=False
+)
+
+
