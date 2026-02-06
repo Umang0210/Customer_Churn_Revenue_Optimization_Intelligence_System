@@ -49,9 +49,9 @@ jobs:
           docker run -d -p 8000:8000 --name churn-api-test churn-ml-api
           sleep 10
           curl --fail http://localhost:8000/health
-      - name: Test predict endpoint
+      - name: Test predict endpoint (valid payload)
         run: |
-          curl -X POST http://localhost:8000/predict \
+          RESPONSE=$(curl -s --fail -X POST http://localhost:8000/predict \
             -H "Content-Type: application/json" \
             -d '{
               "age": 42,
@@ -61,8 +61,11 @@ jobs:
               "has_credit_card": 1,
               "is_active_member": 1,
               "estimated_salary": 80000
-            }'
+            }')
 
+          echo "Response: $RESPONSE"
+          echo "$RESPONSE" | grep -E '"prediction"|\"churn\"' > /dev/null
+          
       # 8️⃣ Cleanup
       - name: Cleanup
         if: always()
