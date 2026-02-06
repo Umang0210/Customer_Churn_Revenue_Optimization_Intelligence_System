@@ -2,9 +2,9 @@ name: CI Pipeline – ML API
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build-test:
@@ -15,11 +15,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Set up Python 3.11 (MANDATORY for sklearn 1.8.0)
+      # 2️⃣ Set up Python 3.10 (stable + compatible with sklearn 1.3.2)
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: "3.10"
 
       # 3️⃣ Upgrade pip
       - name: Upgrade pip
@@ -30,12 +30,13 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      # 5️⃣ Run basic sanity checks (import + model load)
+      # 5️⃣ Sanity check: sklearn version
       - name: Run sanity checks
         run: |
           python - <<EOF
           import sklearn
           print("sklearn version:", sklearn.__version__)
+          assert sklearn.__version__ == "1.3.2"
           EOF
 
       # 6️⃣ Build Docker image
@@ -43,15 +44,19 @@ jobs:
         run: |
           docker build -t churn-ml-api .
 
-      # 7️⃣ Run container and test health endpoint
+      # 7️⃣ Run container & test health endpoint
       - name: Run container & test health
         run: |
           docker run -d -p 8000:8000 --name churn-api-test churn-ml-api
           sleep 10
           curl --fail http://localhost:8000/health
+
+      # 8️⃣ Test predict endpoint (valid payload)
       - name: Test predict endpoint (valid payload)
         run: |
-          RESPONSE=$(curl -s --fail -X POST http://localhost:8000/predict \
+          set -e
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8000/predict \
             -H "Content-Type: application/json" \
             -d '{
               "gender": "Female",
@@ -62,10 +67,27 @@ jobs:
               "totalcharges": 840.0
             }')
 
-          echo "Response: $RESPONSE"
-          echo "$RESPONSE" | grep -E '"prediction"|\"churn\"' > /dev/null
-          
-      # 8️⃣ Cleanup
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          STATUS=$(echo "$RESPONSE" | tail -n 1)
+
+          echo "Status: $STATUS"
+          echo "Body: $BODY"
+
+          test "$STATUS" -eq 200
+          echo "$BODY" | grep -E '"prediction"|\"churn\"' > /dev/null
+
+      # 9️⃣ Test predict endpoint (invalid payload)
+      - name: Test predict endpoint (invalid payload)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST http://localhost:8000/predict \
+            -H "Content-Type: application/json" \
+            -d '{}')
+
+          echo "Invalid payload status: $STATUS"
+          test "$STATUS" -eq 422
+
+      # 🔟 Cleanup
       - name: Cleanup
         if: always()
         run: |
