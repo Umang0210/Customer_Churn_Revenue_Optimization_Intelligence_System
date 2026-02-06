@@ -27,13 +27,29 @@ engine = create_engine(DB_URI)
 # =====================================================
 df = pd.read_csv(DATA_PATH)
 
-# Normalize column names (MUST match training)
+# Normalize column names (must match training)
 df.columns = (
     df.columns
     .str.strip()
     .str.lower()
     .str.replace(" ", "_")
 )
+
+
+# =====================================================
+# NORMALIZE TARGET COLUMN (CRITICAL FIX)
+# =====================================================
+df["churn"] = (
+    df["churn"]
+    .astype(str)
+    .str.strip()
+    .str.lower()
+    .map({"yes": 1, "no": 0})
+)
+
+if df["churn"].isnull().any():
+    raise ValueError("Invalid values found in churn column after normalization")
+
 
 # =====================================================
 # LOAD MODEL & METADATA
@@ -65,22 +81,21 @@ CATEGORICAL_COLS = [
     "contract"
 ]
 
-# Raw feature selection
+# Raw features
 X_raw = df[NUMERIC_COLS + CATEGORICAL_COLS]
 
-# One-hot encode categoricals (same as training)
+# One-hot encode categoricals
 X_encoded = pd.get_dummies(
     X_raw,
     columns=CATEGORICAL_COLS,
     drop_first=True
 )
 
-# Align inference features with training feature list
+# Align inference features with training schema
 for col in feature_list:
     if col not in X_encoded.columns:
         X_encoded[col] = 0
 
-# Drop any extra columns and enforce order
 X_final = X_encoded[feature_list]
 
 
@@ -105,7 +120,7 @@ df["priority_score"] = df["expected_revenue_loss"]
 
 
 # =====================================================
-# TABLE 1: CUSTOMER-LEVEL PREDICTIONS
+# TABLE 1: CUSTOMER PREDICTIONS
 # =====================================================
 customers_predictions = df[[
     "customerid",
@@ -196,19 +211,8 @@ model_run.to_sql(
     index=False
 )
 
-# -----------------------------
-# NORMALIZE TARGET COLUMN
-# -----------------------------
-df["churn"] = (
-    df["churn"]
-    .astype(str)
-    .str.strip()
-    .str.lower()
-    .map({"yes": 1, "no": 0})
-)
 
-
-print("✅ Persist_insights.py completed successfully")
+print("✅ persist_insights.py completed successfully")
 print("✅ MySQL tables populated:")
 print("✅ Customers_predictions")
 print("✅ Business_kpis")
