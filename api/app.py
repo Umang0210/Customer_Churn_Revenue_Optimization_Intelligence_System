@@ -1,15 +1,19 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
 import pandas as pd
 import json
 import mysql.connector
+from pathlib import Path
 
 # ===============================
 # App Init
 # ===============================
-app = FastAPI(title="Churn Intelligence API")
+app = FastAPI(
+    title="Churn Intelligence API",
+    version="1.0.0"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,41 +24,45 @@ app.add_middleware(
 )
 
 # ===============================
-# Load ML Assets
+# Paths (Docker-safe)
 # ===============================
-model = joblib.load("models/churn_model.pkl")
+BASE_DIR = Path(__file__).resolve().parent.parent
+MODEL_DIR = BASE_DIR / "models"
+
+# ===============================
+# Load ML Assets (Fail Fast)
+# ===============================
+try:
+    model = joblib.load(MODEL_DIR / "churn_model.pkl")
+except Exception as e:
+    raise RuntimeError(f"❌ Failed to load model: {e}")
 
 try:
-    scaler = joblib.load("models/scaler.pkl")
-except:
+    scaler = joblib.load(MODEL_DIR / "scaler.pkl")
+except FileNotFoundError:
     scaler = None
 
 try:
-    with open("models/feature_list.json", "r") as f:
+    with open(MODEL_DIR / "feature_list.json") as f:
         feature_list = json.load(f)
-except:
+except FileNotFoundError:
     feature_list = []
 
 # ===============================
 # Database Connection
 # ===============================
 def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",          # later: mysql container / RDS
-        user="churn_user",
-        password="StrongPassword123",
-        database="churn_intelligence"
-    )
+    try:
+        return mysql.connector.connect(
+            host="localhost",
+            user="churn_user",
+            password="StrongPassword123",
+            database="churn_intelligence"
+        )
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"DB connection failed: {e}")
 
-def insert_prediction(
-    customer_id,
-    churn_probability,
-    risk_bucket,
-    revenue,
-    expected_revenue_loss,
-    priority_score,
-    model_version
-):
+def insert_prediction(**kwargs):
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -72,13 +80,13 @@ def insert_prediction(
     """
 
     cursor.execute(query, (
-        customer_id,
-        churn_probability,
-        risk_bucket,
-        revenue,
-        expected_revenue_loss,
-        priority_score,
-        model_version
+        kwargs["customer_id"],
+        kwargs["churn_probability"],
+        kwargs["risk_bucket"],
+        kwargs["revenue"],
+        kwargs["expected_revenue_loss"],
+        kwargs["priority_score"],
+        kwargs["model_version"]
     ))
 
     conn.commit()
@@ -91,15 +99,13 @@ def insert_prediction(
 class ChurnRequest(BaseModel):
     customer_id: str
     revenue: float
-
     monthly_charges: float
     usage_frequency: int
     complaints_count: int
     payment_delays: int
-
-    gender: str | None = "missing"
-    seniorcitizen: str | None = "missing"
-    contract: str | None = "missing"
+    gender: str = "missing"
+    seniorcitizen: str = "missing"
+    contract: str = "missing"
 
 # ===============================
 # Health
@@ -109,20 +115,15 @@ def health():
     return {"status": "ok"}
 
 # ===============================
-# Predict + Persist
+# Predict
 # ===============================
 @app.post("/predict")
 def predict(request: ChurnRequest):
 
-    # ---- Build DataFrame ----
     df = pd.DataFrame([request.dict()])
-    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+    df.columns = df.columns.str.lower()
 
     categorical_cols = ["gender", "seniorcitizen", "contract"]
-    for col in categorical_cols:
-        if col not in df.columns:
-            df[col] = "missing"
-
     df_encoded = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
 
     if feature_list:
@@ -132,7 +133,6 @@ def predict(request: ChurnRequest):
 
     X = scaler.transform(df_final) if scaler else df_final
 
-    # ---- ML Prediction ----
     prob = float(model.predict_proba(X)[0][1])
 
     if prob >= 0.7:
@@ -144,9 +144,7 @@ def predict(request: ChurnRequest):
 
     expected_loss = round(prob * request.revenue, 2)
     priority_score = round(prob * expected_loss, 2)
-    model_version = "v1.0"
 
-    # ---- Insert into MySQL ----
     insert_prediction(
         customer_id=request.customer_id,
         churn_probability=round(prob, 4),
@@ -154,10 +152,9 @@ def predict(request: ChurnRequest):
         revenue=request.revenue,
         expected_revenue_loss=expected_loss,
         priority_score=priority_score,
-        model_version=model_version
+        model_version="v1.0"
     )
 
-    # ---- API Response ----
     return {
         "customer_id": request.customer_id,
         "churn_probability": round(prob, 4),
@@ -167,90 +164,44 @@ def predict(request: ChurnRequest):
     }
 
 # ===============================
-# GET APIs FOR FRONTEND
+# Read APIs
 # ===============================
-
 @app.get("/api/customers")
 def get_customers():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("""
-        SELECT
-            customer_id,
-            churn_probability,
-            risk_bucket,
-            revenue,
-            expected_revenue_loss,
-            priority_score,
-            model_version,
-            prediction_timestamp
-        FROM customers_predictions
-        ORDER BY priority_score DESC
-        LIMIT 100
-    """)
-
+    cursor.execute("SELECT * FROM customers_predictions ORDER BY priority_score DESC LIMIT 100")
     data = cursor.fetchall()
     cursor.close()
     conn.close()
     return data
-
 
 @app.get("/api/kpis")
 def get_kpis():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-
     cursor.execute("""
         SELECT
             COUNT(*) AS total_customers,
-            SUM(CASE WHEN risk_bucket = 'HIGH' THEN 1 ELSE 0 END) AS high_risk_customers,
-            ROUND(SUM(CASE WHEN risk_bucket = 'HIGH' THEN expected_revenue_loss ELSE 0 END), 2)
-                AS revenue_at_risk
+            SUM(CASE WHEN risk_bucket='HIGH' THEN 1 ELSE 0 END) AS high_risk_customers,
+            ROUND(SUM(CASE WHEN risk_bucket='HIGH' THEN expected_revenue_loss ELSE 0 END), 2)
+            AS revenue_at_risk
         FROM customers_predictions
     """)
-
     data = cursor.fetchone()
     cursor.close()
     conn.close()
     return data
 
-
 @app.get("/api/risk_distribution")
 def risk_distribution():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-
     cursor.execute("""
-        SELECT
-            risk_bucket,
-            COUNT(*) AS count
+        SELECT risk_bucket, COUNT(*) AS count
         FROM customers_predictions
         GROUP BY risk_bucket
     """)
-
-    data = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return data
-
-
-@app.get("/api/segments")
-def segment_insights():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("""
-        SELECT
-            segment_type,
-            segment_value,
-            churn_rate,
-            customer_count,
-            generated_at
-        FROM segment_insights
-        ORDER BY churn_rate DESC
-    """)
-
     data = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -263,13 +214,5 @@ def segment_insights():
 def root():
     return {
         "service": "churn-intelligence-api",
-        "status": "running",
-        "endpoints": [
-            "/predict",
-            "/api/customers",
-            "/api/kpis",
-            "/api/risk_distribution",
-            "/api/segments"
-        ]
+        "status": "running"
     }
-
