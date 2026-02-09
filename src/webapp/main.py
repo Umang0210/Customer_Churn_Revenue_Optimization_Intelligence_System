@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
@@ -7,6 +8,15 @@ import os
 import json
 
 app = FastAPI(title="Churn Insights Dashboard")
+
+# Enable CORS for file:// access or external clients
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # CONFIG
 DB_URI = "mysql+pymysql://churn_user:StrongPassword123@localhost:3306/churn_intelligence"
@@ -72,6 +82,21 @@ def get_model_metrics():
         query = "SELECT * FROM model_runs ORDER BY run_timestamp DESC LIMIT 1"
         df = pd.read_sql(query, engine)
         return df.to_dict(orient="records")[0] if not df.empty else {}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/risk_distribution")
+def get_risk_distribution():
+    """Fetch risk distribution for pie chart"""
+    try:
+        query = """
+        SELECT risk_bucket, COUNT(*) as count 
+        FROM customers_predictions 
+        WHERE prediction_timestamp = (SELECT MAX(prediction_timestamp) FROM customers_predictions)
+        GROUP BY risk_bucket
+        """
+        df = pd.read_sql(query, engine)
+        return df.to_dict(orient="records")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
