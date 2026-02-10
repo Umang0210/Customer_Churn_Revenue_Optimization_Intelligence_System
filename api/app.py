@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from datetime import datetime
 import joblib
 import pandas as pd
 import json
@@ -24,18 +25,18 @@ app.add_middleware(
 )
 
 # ===============================
-# Paths (Docker-safe)
+# Paths
 # ===============================
 BASE_DIR = Path(__file__).resolve().parent.parent
 MODEL_DIR = BASE_DIR / "models"
 
 # ===============================
-# Load ML Assets (Fail Fast)
+# Load ML Assets
 # ===============================
 try:
     model = joblib.load(MODEL_DIR / "churn_model.pkl")
 except Exception as e:
-    raise RuntimeError(f"❌ Failed to load model: {e}")
+    raise RuntimeError(f"Failed to load model: {e}")
 
 try:
     scaler = joblib.load(MODEL_DIR / "scaler.pkl")
@@ -49,7 +50,7 @@ except FileNotFoundError:
     feature_list = []
 
 # ===============================
-# Database Connection
+# Database
 # ===============================
 def get_db_connection():
     try:
@@ -60,7 +61,7 @@ def get_db_connection():
             database="churn_intelligence"
         )
     except mysql.connector.Error as e:
-        raise HTTPException(status_code=500, detail=f"DB connection failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 def insert_prediction(**kwargs):
     conn = get_db_connection()
@@ -115,7 +116,7 @@ def health():
     return {"status": "ok"}
 
 # ===============================
-# Predict
+# Predict (FINAL CONTRACT)
 # ===============================
 @app.post("/predict")
 def predict(request: ChurnRequest):
@@ -132,7 +133,6 @@ def predict(request: ChurnRequest):
         df_final = df_encoded
 
     X = scaler.transform(df_final) if scaler else df_final
-
     prob = float(model.predict_proba(X)[0][1])
 
     if prob >= 0.7:
@@ -141,6 +141,25 @@ def predict(request: ChurnRequest):
         risk = "MEDIUM"
     else:
         risk = "LOW"
+
+    # -------------------------------
+    # Action Logic
+    # -------------------------------
+    if prob >= 0.7:
+        action = "RETENTION_CALL"
+        urgency = "IMMEDIATE"
+        confidence = "HIGH"
+        reason = "High churn risk with significant revenue exposure"
+    elif prob >= 0.4:
+        action = "DISCOUNT_OFFER"
+        urgency = "WITHIN_7_DAYS"
+        confidence = "MODERATE"
+        reason = "Medium churn risk with meaningful revenue exposure"
+    else:
+        action = "NO_ACTION"
+        urgency = "LOW"
+        confidence = "LOW"
+        reason = "Low churn risk"
 
     expected_loss = round(prob * request.revenue, 2)
     priority_score = round(prob * expected_loss, 2)
@@ -157,51 +176,71 @@ def predict(request: ChurnRequest):
 
     return {
         "customer_id": request.customer_id,
-        "churn_probability": round(prob, 4),
-        "risk_bucket": risk,
-        "expected_revenue_loss": expected_loss,
-        "priority_score": priority_score
+
+        "prediction": {
+            "churn_probability": round(prob, 4),
+            "risk_bucket": risk,
+            "confidence": confidence
+        },
+
+        "financial_impact": {
+            "customer_revenue": request.revenue,
+            "expected_revenue_loss": expected_loss,
+            "priority_score": priority_score
+        },
+
+        "recommended_action": {
+            "action": action,
+            "urgency": urgency,
+            "reason": reason
+        },
+
+        "model_info": {
+            "model_version": "v1.0",
+            "prediction_time": datetime.utcnow().isoformat() + "Z"
+        }
     }
 
 # ===============================
-# Read APIs
+# Dashboard APIs (Frontend-Ready)
 # ===============================
-@app.get("/api/customers")
-def get_customers():
+@app.get("/api/dashboard/summary")
+def dashboard_summary():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM customers_predictions ORDER BY priority_score DESC LIMIT 100")
-    data = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return data
 
-@app.get("/api/kpis")
-def get_kpis():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
     cursor.execute("""
         SELECT
-            COUNT(*) AS total_customers,
+            COUNT(*) AS total_predictions,
+            ROUND(AVG(churn_probability), 4) AS avg_churn_probability,
             SUM(CASE WHEN risk_bucket='HIGH' THEN 1 ELSE 0 END) AS high_risk_customers,
-            ROUND(SUM(CASE WHEN risk_bucket='HIGH' THEN expected_revenue_loss ELSE 0 END), 2)
-            AS revenue_at_risk
+            ROUND(SUM(expected_revenue_loss), 2) AS total_revenue_at_risk
         FROM customers_predictions
     """)
+
     data = cursor.fetchone()
     cursor.close()
     conn.close()
     return data
 
-@app.get("/api/risk_distribution")
-def risk_distribution():
+@app.get("/api/dashboard/priority_customers")
+def priority_customers():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+
     cursor.execute("""
-        SELECT risk_bucket, COUNT(*) AS count
+        SELECT
+            customer_id,
+            churn_probability,
+            risk_bucket,
+            expected_revenue_loss,
+            priority_score,
+            prediction_timestamp
         FROM customers_predictions
-        GROUP BY risk_bucket
+        ORDER BY priority_score DESC
+        LIMIT 20
     """)
+
     data = cursor.fetchall()
     cursor.close()
     conn.close()
