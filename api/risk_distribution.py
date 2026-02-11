@@ -6,13 +6,16 @@ def risk_distribution():
     cursor.execute("""
         SELECT
             risk_bucket,
-            COUNT(*) AS count
+            COUNT(*) AS count,
+            ROUND(AVG(churn_probability), 4) AS avg_probability,
+            ROUND(SUM(expected_revenue_loss), 2) AS revenue_at_risk
         FROM customer_churn_analytics
         GROUP BY risk_bucket
-        ORDER BY FIELD(risk_bucket, 'HIGH', 'MEDIUM', 'LOW')
+        ORDER BY count DESC
     """)
 
     data = cursor.fetchall()
     cursor.close()
     conn.close()
+
     return data
