@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customers - Churn Intelligence</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Churn Intelligence</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="customers.html" class="nav-item active">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span>
+                </a>
+                <a href="analytics.html" class="nav-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="predictions.html" class="nav-item">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Predictions</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- TOP BAR -->
+            <div class="top-bar">
+                <h1 class="page-title">
+                    <i class="fas fa-users"></i>
+                    Customer Management
+                </h1>
+                <div class="user-info">
+                    <span class="user-name">Analytics Team</span>
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEARCH AND FILTERS -->
+            <div class="filters-section">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search customers by ID, name, or email...">
+                </div>
+                <div class="filter-controls">
+                    <select class="filter-select">
+                        <option value="all">All Risk Levels</option>
+                        <option value="high">High Risk</option>
+                        <option value="medium">Medium Risk</option>
+                        <option value="low">Low Risk</option>
+                    </select>
+                    <select class="filter-select">
+                        <option value="all">All Segments</option>
+                        <option value="premium">Premium</option>
+                        <option value="standard">Standard</option>
+                        <option value="basic">Basic</option>
+                    </select>
+                    <button class="btn-primary">
+                        <i class="fas fa-filter"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- QUICK STATS -->
+            <div class="kpi-container">
+                <div class="kpi-card">
+                    <div class="kpi-icon purple">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>Total Customers</h3>
+                        <p id="totalCustomers">1,247</p>
+                        <span class="kpi-label">Active Accounts</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon red">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>High Risk</h3>
+                        <p id="highRiskCount">87</p>
+                        <span class="kpi-label">Requires Attention</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon amber">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>At Risk (30 Days)</h3>
+                        <p id="atRisk">156</p>
+                        <span class="kpi-label">Predicted Churn</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon emerald">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>Retained</h3>
+                        <p id="retained">1,004</p>
+                        <span class="kpi-label">Low Risk Customers</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CUSTOMER GRID -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h2>
+                        <i class="fas fa-list"></i>
+                        All Customers
+                    </h2>
+                    <div class="table-actions">
+                        <button class="btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Export CSV
+                        </button>
+                        <button class="btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Add Customer
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Customer ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Segment</th>
+                                <th>Risk Level</th>
+                                <th>Churn Probability</th>
+                                <th>Expected Loss</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTableBody">
+                            <tr>
+                                <td><strong>CUST-001</strong></td>
+                                <td>John Doe</td>
+                                <td>john.doe@example.com</td>
+                                <td>Premium</td>
+                                <td><span style="color: #ef4444; font-weight: 600;">● HIGH</span></td>
+                                <td>78.5%</td>
+                                <td>₹45,000</td>
+                                <td>
+                                    <button class="btn-small btn-view">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>CUST-002</strong></td>
+                                <td>Jane Smith</td>
+                                <td>jane.smith@example.com</td>
+                                <td>Standard</td>
+                                <td><span style="color: #f59e0b; font-weight: 600;">● MEDIUM</span></td>
+                                <td>52.3%</td>
+                                <td>₹28,000</td>
+                                <td>
+                                    <button class="btn-small btn-view">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>CUST-003</strong></td>
+                                <td>Robert Johnson</td>
+                                <td>robert.j@example.com</td>
+                                <td>Basic</td>
+                                <td><span style="color: #10b981; font-weight: 600;">● LOW</span></td>
+                                <td>15.2%</td>
+                                <td>₹8,500</td>
+                                <td>
+                                    <button class="btn-small btn-view">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>CUST-004</strong></td>
+                                <td>Emily Davis</td>
+                                <td>emily.d@example.com</td>
+                                <td>Premium</td>
+                                <td><span style="color: #ef4444; font-weight: 600;">● HIGH</span></td>
+                                <td>82.7%</td>
+                                <td>₹52,000</td>
+                                <td>
+                                    <button class="btn-small btn-view">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>CUST-005</strong></td>
+                                <td>Michael Brown</td>
+                                <td>michael.b@example.com</td>
+                                <td>Standard</td>
+                                <td><span style="color: #10b981; font-weight: 600;">● LOW</span></td>
+                                <td>22.1%</td>
+                                <td>₹12,000</td>
+                                <td>
+                                    <button class="btn-small btn-view">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button class="btn-secondary">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="page-info">Page 1 of 25</span>
+                    <button class="btn-secondary">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

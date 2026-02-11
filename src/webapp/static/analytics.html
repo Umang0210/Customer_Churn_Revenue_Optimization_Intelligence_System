@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics - Churn Intelligence</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Churn Intelligence</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="customers.html" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span>
+                </a>
+                <a href="analytics.html" class="nav-item active">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="predictions.html" class="nav-item">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Predictions</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- TOP BAR -->
+            <div class="top-bar">
+                <h1 class="page-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Advanced Analytics
+                </h1>
+                <div class="user-info">
+                    <span class="user-name">Analytics Team</span>
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TIME RANGE SELECTOR -->
+            <div class="filters-section">
+                <div class="time-range-selector">
+                    <button class="time-btn active">7 Days</button>
+                    <button class="time-btn">30 Days</button>
+                    <button class="time-btn">90 Days</button>
+                    <button class="time-btn">1 Year</button>
+                    <button class="time-btn">All Time</button>
+                </div>
+                <button class="btn-primary">
+                    <i class="fas fa-download"></i>
+                    Export Report
+                </button>
+            </div>
+
+            <!-- KEY INSIGHTS -->
+            <div class="insights-section">
+                <h2 class="section-title">
+                    <i class="fas fa-lightbulb"></i>
+                    Key Insights
+                </h2>
+                <div class="insights-grid">
+                    <div class="insight-card">
+                        <div class="insight-icon">
+                            <i class="fas fa-arrow-up"></i>
+                        </div>
+                        <div class="insight-content">
+                            <h4>Churn Rate Trend</h4>
+                            <p>Churn rate has increased by <strong>12.5%</strong> over the last 30 days</p>
+                            <span class="insight-badge warning">Attention Required</span>
+                        </div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-icon success">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="insight-content">
+                            <h4>Retention Success</h4>
+                            <p>Successfully retained <strong>78%</strong> of at-risk customers this quarter</p>
+                            <span class="insight-badge success">Positive Trend</span>
+                        </div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-icon info">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="insight-content">
+                            <h4>Revenue Impact</h4>
+                            <p>Potential revenue loss reduced by <strong>₹2.5M</strong> through early intervention</p>
+                            <span class="insight-badge info">Good Performance</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS SECTION -->
+            <div class="charts-container">
+                <div class="chart-box chart-wide">
+                    <div class="chart-header">
+                        <h3>
+                            <i class="fas fa-chart-line"></i>
+                            Churn Rate Trend Over Time
+                        </h3>
+                        <span class="chart-subtitle">Monthly churn rate analysis</span>
+                    </div>
+                    <div class="chart-content">
+                        <canvas id="churnTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <h3>
+                            <i class="fas fa-users"></i>
+                            Customer Segmentation
+                        </h3>
+                        <span class="chart-subtitle">Distribution by segment</span>
+                    </div>
+                    <div class="chart-content">
+                        <canvas id="segmentChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <h3>
+                            <i class="fas fa-rupee-sign"></i>
+                            Revenue at Risk by Segment
+                        </h3>
+                        <span class="chart-subtitle">Financial impact analysis</span>
+                    </div>
+                    <div class="chart-content">
+                        <canvas id="revenueRiskChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-box chart-wide">
+                    <div class="chart-header">
+                        <h3>
+                            <i class="fas fa-percentage"></i>
+                            Churn Probability Distribution
+                        </h3>
+                        <span class="chart-subtitle">Customer distribution by churn probability</span>
+                    </div>
+                    <div class="chart-content">
+                        <canvas id="probabilityDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Chart.js Global Configuration for Dark Theme
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = '#334155';
+        Chart.defaults.font.family = 'Inter, sans-serif';
+
+        // Churn Trend Chart
+        new Chart(document.getElementById('churnTrendChart'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Churn Rate (%)',
+                    data: [12, 15, 13, 18, 16, 20, 22, 19, 24, 21, 25, 28],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                }
+            }
+        });
+
+        // Segment Chart
+        new Chart(document.getElementById('segmentChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Premium', 'Standard', 'Basic'],
+                datasets: [{
+                    data: [320, 580, 347],
+                    backgroundColor: ['#8b5cf6', '#3b82f6', '#10b981']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 20 } }
+                }
+            }
+        });
+
+        // Revenue Risk Chart
+        new Chart(document.getElementById('revenueRiskChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Premium', 'Standard', 'Basic'],
+                datasets: [{
+                    label: 'Revenue at Risk (₹ Lakhs)',
+                    data: [125, 78, 42],
+                    backgroundColor: '#f59e0b'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                }
+            }
+        });
+
+        // Probability Distribution Chart
+        new Chart(document.getElementById('probabilityDistChart'), {
+            type: 'bar',
+            data: {
+                labels: ['0-10%', '10-20%', '20-30%', '30-40%', '40-50%', '50-60%', '60-70%', '70-80%', '80-90%', '90-100%'],
+                datasets: [{
+                    label: 'Number of Customers',
+                    data: [420, 380, 310, 250, 190, 140, 95, 65, 40, 22],
+                    backgroundColor: '#8b5cf6'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

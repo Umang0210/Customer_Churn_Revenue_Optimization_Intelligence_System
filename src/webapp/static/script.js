@@ -1,188 +1,205 @@
-// Initial Load
-document.addEventListener('DOMContentLoaded', () => {
-    fetchKPIs();
-    fetchSegments();
-    fetchRiskDistribution();
-    fetchHighRiskCustomers();
-    fetchModelMetrics();
+const BASE_URL = "http://127.0.0.1:8000";
 
-    // Form Listener
-    const form = document.getElementById('predict-form');
-    if (form) form.addEventListener('submit', handlePrediction);
-});
+// Chart.js Global Configuration for Dark Theme
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#334155';
+Chart.defaults.font.family = 'Inter, sans-serif';
 
-// Navigation
-function switchTab(tabName) {
-    // 1. Hide all views
-    document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
-    // 2. Show target
-    document.getElementById(`view-${tabName}`).style.display = 'block';
-    // 3. Update Sidebar Active State
-    document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
-    // (Simple way: find by text content or index. For now just generic active removed)
-    // Adding active class to clicked is simpler if we pass 'this', but keeping it simple:
-    event.currentTarget.classList.add('active');
-}
-
-// Utilities
-const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '';
-const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
-
-// ------------------------------------------
-// LIVE PREDICTION LOGIC
-// ------------------------------------------
-async function handlePrediction(e) {
-    e.preventDefault();
-
-    const formData = new FormData(e.target);
-    const payload = Object.fromEntries(formData.entries());
-
-    // Convert numbers
-    payload.revenue = parseFloat(payload.revenue);
-    payload.monthly_charges = parseFloat(payload.monthly_charges);
-    payload.tenure = parseInt(payload.tenure);
-
-    const btn = e.target.querySelector('button');
-    const originalText = btn.innerText;
-    btn.innerText = "⏳ Analyzing...";
-    btn.disabled = true;
-
+// ========================
+// FETCH DASHBOARD SUMMARY
+// ========================
+async function loadSummary() {
     try {
-        const response = await fetch(`${API_BASE}/api/predict`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const res = await fetch(`${BASE_URL}/api/dashboard/summary`);
+        const data = await res.json();
 
-        if (!response.ok) throw new Error('Prediction failed');
-        const result = await response.json();
-
-        displayResult(result);
-
-        // Refresh dashboard data as DB updated
-        fetchKPIs();
-        fetchHighRiskCustomers();
-
+        document.getElementById("totalPredictions").innerText = data.total_predictions || 0;
+        document.getElementById("avgChurn").innerText = (data.avg_churn_probability || 0).toFixed(2) + '%';
+        document.getElementById("highRisk").innerText = data.high_risk_customers || 0;
+        document.getElementById("revenueRisk").innerText = "₹" + (data.total_revenue_at_risk || 0).toLocaleString('en-IN');
     } catch (error) {
-        alert("Error: " + error.message);
-    } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
+        console.error("Error loading summary:", error);
+        // Set placeholder values on error
+        document.getElementById("totalPredictions").innerText = "0";
+        document.getElementById("avgChurn").innerText = "0%";
+        document.getElementById("highRisk").innerText = "0";
+        document.getElementById("revenueRisk").innerText = "₹0";
     }
 }
 
-function displayResult(data) {
-    const resultCard = document.getElementById('prediction-result');
-    resultCard.classList.remove('hidden');
+// ========================
+// FETCH PRIORITY CUSTOMERS
+// ========================
+async function loadCustomers() {
+    try {
+        const res = await fetch(`${BASE_URL}/api/dashboard/priority_customers`);
+        const customers = await res.json();
 
-    // Values
-    document.getElementById('pred-prob').innerText = (data.churn_probability * 100).toFixed(1) + '%';
-    document.getElementById('pred-loss').innerText = formatCurrency(data.expected_revenue_loss);
-    document.getElementById('pred-priority').innerText = data.priority_score;
+        const tbody = document.getElementById("customerTable");
+        tbody.innerHTML = "";
 
-    const riskEl = document.getElementById('pred-risk');
-    riskEl.innerText = data.risk_bucket + " RISK";
+        const riskCounts = { HIGH: 0, MEDIUM: 0, LOW: 0 };
+        const names = [];
+        const priorityScores = [];
 
-    // Color Logic
-    let color = '#10b981'; // Low
-    if (data.risk_bucket === 'HIGH') color = '#ef4444';
-    if (data.risk_bucket === 'MEDIUM') color = '#f59e0b';
+        customers.forEach(c => {
+            riskCounts[c.risk_bucket]++;
 
-    riskEl.style.color = color;
-    document.getElementById('score-circle').style.stroke = color;
+            names.push(c.customer_id);
+            priorityScores.push(c.priority_score);
 
-    // Animate Circle
-    const circle = document.getElementById('score-circle');
-    const pct = data.churn_probability * 100;
-    // Stroke dasharray: values 0 100. We want length filled.
-    // Length is 100 units (approx for viewbox).
-    circle.setAttribute('stroke-dasharray', `${pct}, 100`);
+            const riskBadge = getRiskBadge(c.risk_bucket);
+            const row = `
+        <tr>
+          <td><strong>${c.customer_id}</strong></td>
+          <td>${riskBadge}</td>
+          <td>${(c.churn_probability * 100).toFixed(1)}%</td>
+          <td>₹${c.expected_revenue_loss.toLocaleString('en-IN')}</td>
+          <td><strong>${c.priority_score.toFixed(2)}</strong></td>
+        </tr>
+      `;
+            tbody.innerHTML += row;
+        });
+
+        drawRiskChart(riskCounts);
+        drawPriorityChart(names, priorityScores);
+    } catch (error) {
+        console.error("Error loading customers:", error);
+    }
 }
 
-// ------------------------------------------
-// DASHBOARD FETCHERS (Existing)
-// ------------------------------------------
-const fetchKPIs = async () => {
-    try {
-        const res = await fetch(`${API_BASE}/api/kpis`);
-        const data = await res.json();
-        document.getElementById('total-revenue').innerText = formatCurrency(data.total_revenue);
-        document.getElementById('revenue-at-risk').innerText = formatCurrency(data.revenue_at_risk);
-        document.getElementById('churn-rate').innerText = data.churn_rate_pct + '%';
-    } catch (err) { console.error(err); }
-};
+// ========================
+// RISK BADGE HELPER
+// ========================
+function getRiskBadge(risk) {
+    const colors = {
+        HIGH: '#ef4444',
+        MEDIUM: '#f59e0b',
+        LOW: '#10b981'
+    };
+    return `<span style="color: ${colors[risk]}; font-weight: 600;">● ${risk}</span>`;
+}
 
-const fetchRiskDistribution = async () => {
-    try {
-        const res = await fetch(`${API_BASE}/api/risk_distribution`);
-        const data = await res.json();
-        const labels = data.map(d => d.risk_bucket);
-        const values = data.map(d => d.count);
-        const colors = labels.map(l => l === 'HIGH' ? '#ef4444' : l === 'MEDIUM' ? '#f59e0b' : '#10b981');
-
-        new Chart(document.getElementById('riskDistChart'), {
-            type: 'doughnut',
-            data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
-            options: { cutout: '75%', plugins: { legend: { position: 'right', labels: { color: '#fff' } } } }
-        });
-    } catch (err) { console.error(err); }
-};
-
-const fetchSegments = async () => {
-    try {
-        const res = await fetch(`${API_BASE}/api/segments`);
-        const data = await res.json();
-        const labels = data.map(d => d.segment_value);
-        const vals = data.map(d => (d.churn_rate * 100).toFixed(1));
-
-        new Chart(document.getElementById('segmentChart'), {
-            type: 'bar',
-            data: { labels, datasets: [{ label: 'Churn %', data: vals, backgroundColor: '#3b82f6', borderRadius: 4 }] },
-            options: {
-                indexAxis: 'y',
-                plugins: { legend: { display: false } },
-                scales: { x: { grid: { color: 'rgba(255,255,255,0.1)' } }, y: { grid: { display: false } } }
-            }
-        });
-    } catch (err) { console.error(err); }
-};
-
-const fetchHighRiskCustomers = async () => {
-    try {
-        const res = await fetch(`${API_BASE}/api/customers`);
-        const data = await res.json();
-        const tbody = document.getElementById('customer-table-body');
-        tbody.innerHTML = '';
-        data.forEach(c => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${c.customer_id}</td>
-                <td><span class="badge badge-${c.risk_bucket.toLowerCase()}">${c.risk_bucket}</span></td>
-                <td>${(c.churn_probability * 100).toFixed(1)}%</td>
-                <td style="color:#ef4444">${formatCurrency(c.expected_revenue_loss)}</td>
-                <td>${formatCurrency(c.revenue)}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    } catch (err) { console.error(err); }
-};
-
-const fetchModelMetrics = async () => {
-    // Reuse radar chart logic
-    const ctx = document.getElementById('modelRadarChart').getContext('2d');
+// ========================
+// CHARTS
+// ========================
+function drawRiskChart(riskCounts) {
+    const ctx = document.getElementById("riskChart");
     new Chart(ctx, {
-        type: 'radar',
+        type: "doughnut",
         data: {
-            labels: ['Precision', 'Recall', 'F1', 'AUC', 'Acc'],
+            labels: ["HIGH", "MEDIUM", "LOW"],
             datasets: [{
-                label: 'Current Model',
-                data: [0.85, 0.78, 0.81, 0.88, 0.92],
-                backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                borderColor: '#3b82f6'
+                data: [
+                    riskCounts.HIGH,
+                    riskCounts.MEDIUM,
+                    riskCounts.LOW
+                ],
+                backgroundColor: [
+                    "#ef4444",
+                    "#f59e0b",
+                    "#10b981"
+                ],
+                borderWidth: 0,
+                hoverOffset: 8
             }]
         },
         options: {
-            scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { color: '#9ca3af' } } }
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        font: {
+                            size: 13,
+                            weight: '500'
+                        },
+                        color: '#94a3b8'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    titleColor: '#f1f5f9',
+                    bodyColor: '#f1f5f9',
+                    borderColor: '#334155',
+                    borderWidth: 1,
+                    padding: 12,
+                    bodyFont: {
+                        size: 14
+                    }
+                }
+            }
         }
     });
-};
+}
+
+function drawPriorityChart(names, scores) {
+    const ctx = document.getElementById("priorityChart");
+    new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: names,
+            datasets: [{
+                label: "Priority Score",
+                data: scores,
+                backgroundColor: "#8b5cf6",
+                borderRadius: 6,
+                hoverBackgroundColor: "#a78bfa"
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    titleColor: '#f1f5f9',
+                    bodyColor: '#f1f5f9',
+                    borderColor: '#334155',
+                    borderWidth: 1,
+                    padding: 12,
+                    bodyFont: {
+                        size: 14
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#334155',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: {
+                            size: 12
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ========================
+// INIT
+// ========================
+loadSummary();
+loadCustomers();

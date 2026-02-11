@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Predictions - Churn Intelligence</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Churn Intelligence</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="customers.html" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span>
+                </a>
+                <a href="analytics.html" class="nav-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="predictions.html" class="nav-item active">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Predictions</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- TOP BAR -->
+            <div class="top-bar">
+                <h1 class="page-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Churn Predictions
+                </h1>
+                <div class="user-info">
+                    <span class="user-name">Analytics Team</span>
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PREDICTION FORM -->
+            <div class="prediction-form-container">
+                <h2 class="section-title">
+                    <i class="fas fa-plus-circle"></i>
+                    New Prediction Request
+                </h2>
+                <form class="prediction-form" id="predictionForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="customerId">
+                                <i class="fas fa-id-card"></i>
+                                Customer ID
+                            </label>
+                            <input type="text" id="customerId" placeholder="Enter customer ID" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tenure">
+                                <i class="fas fa-calendar"></i>
+                                Tenure (Months)
+                            </label>
+                            <input type="number" id="tenure" placeholder="e.g., 24" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="monthlyCharges">
+                                <i class="fas fa-rupee-sign"></i>
+                                Monthly Charges
+                            </label>
+                            <input type="number" id="monthlyCharges" placeholder="e.g., 2500" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="totalCharges">
+                                <i class="fas fa-money-bill"></i>
+                                Total Charges
+                            </label>
+                            <input type="number" id="totalCharges" placeholder="e.g., 60000" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="contract">
+                                <i class="fas fa-file-contract"></i>
+                                Contract Type
+                            </label>
+                            <select id="contract" required>
+                                <option value="">Select contract type</option>
+                                <option value="month-to-month">Month-to-Month</option>
+                                <option value="one-year">One Year</option>
+                                <option value="two-year">Two Year</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="paymentMethod">
+                                <i class="fas fa-credit-card"></i>
+                                Payment Method
+                            </label>
+                            <select id="paymentMethod" required>
+                                <option value="">Select payment method</option>
+                                <option value="electronic-check">Electronic Check</option>
+                                <option value="credit-card">Credit Card</option>
+                                <option value="bank-transfer">Bank Transfer</option>
+                                <option value="mailed-check">Mailed Check</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="reset" class="btn-secondary">
+                            <i class="fas fa-redo"></i>
+                            Reset
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-brain"></i>
+                            Generate Prediction
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- PREDICTION RESULT -->
+            <div class="prediction-result" id="predictionResult" style="display: none;">
+                <div class="result-header">
+                    <h3>
+                        <i class="fas fa-chart-pie"></i>
+                        Prediction Result
+                    </h3>
+                </div>
+                <div class="result-cards">
+                    <div class="result-card">
+                        <div class="result-label">Churn Probability</div>
+                        <div class="result-value" id="resultProbability">--</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-label">Risk Level</div>
+                        <div class="result-value" id="resultRisk">--</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-label">Confidence Score</div>
+                        <div class="result-value" id="resultConfidence">--</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-label">Recommended Action</div>
+                        <div class="result-value small" id="resultAction">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECENT PREDICTIONS -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h2>
+                        <i class="fas fa-history"></i>
+                        Recent Predictions
+                    </h2>
+                    <div class="table-actions">
+                        <button class="btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Customer ID</th>
+                                <th>Churn Probability</th>
+                                <th>Risk Level</th>
+                                <th>Confidence</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2026-02-10 12:45:23</td>
+                                <td><strong>CUST-512</strong></td>
+                                <td>85.2%</td>
+                                <td><span style="color: #ef4444; font-weight: 600;">● HIGH</span></td>
+                                <td>92%</td>
+                                <td><span class="status-badge danger">Action Required</span></td>
+                            </tr>
+                            <tr>
+                                <td>2026-02-10 12:32:15</td>
+                                <td><strong>CUST-387</strong></td>
+                                <td>48.7%</td>
+                                <td><span style="color: #f59e0b; font-weight: 600;">● MEDIUM</span></td>
+                                <td>87%</td>
+                                <td><span class="status-badge warning">Monitor</span></td>
+                            </tr>
+                            <tr>
+                                <td>2026-02-10 12:18:42</td>
+                                <td><strong>CUST-921</strong></td>
+                                <td>12.3%</td>
+                                <td><span style="color: #10b981; font-weight: 600;">● LOW</span></td>
+                                <td>95%</td>
+                                <td><span class="status-badge success">Healthy</span></td>
+                            </tr>
+                            <tr>
+                                <td>2026-02-10 11:56:09</td>
+                                <td><strong>CUST-203</strong></td>
+                                <td>76.4%</td>
+                                <td><span style="color: #ef4444; font-weight: 600;">● HIGH</span></td>
+                                <td>89%</td>
+                                <td><span class="status-badge danger">Action Required</span></td>
+                            </tr>
+                            <tr>
+                                <td>2026-02-10 11:42:37</td>
+                                <td><strong>CUST-664</strong></td>
+                                <td>34.1%</td>
+                                <td><span style="color: #f59e0b; font-weight: 600;">● MEDIUM</span></td>
+                                <td>91%</td>
+                                <td><span class="status-badge warning">Monitor</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Form submission handler
+        document.getElementById('predictionForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Simulate prediction result
+            const probability = (Math.random() * 100).toFixed(1);
+            const confidence = (85 + Math.random() * 10).toFixed(0);
+
+            let risk = 'LOW';
+            let riskColor = '#10b981';
+            let action = 'Continue monitoring';
+
+            if (probability > 70) {
+                risk = 'HIGH';
+                riskColor = '#ef4444';
+                action = 'Immediate intervention required';
+            } else if (probability > 40) {
+                risk = 'MEDIUM';
+                riskColor = '#f59e0b';
+                action = 'Schedule retention campaign';
+            }
+
+            // Display results
+            document.getElementById('resultProbability').textContent = probability + '%';
+            document.getElementById('resultProbability').style.color = riskColor;
+            document.getElementById('resultRisk').innerHTML = `<span style="color: ${riskColor};">● ${risk}</span>`;
+            document.getElementById('resultConfidence').textContent = confidence + '%';
+            document.getElementById('resultAction').textContent = action;
+
+            document.getElementById('predictionResult').style.display = 'block';
+            document.getElementById('predictionResult').scrollIntoView({ behavior: 'smooth' });
+        });
+    </script>
+</body>
+
+</html>

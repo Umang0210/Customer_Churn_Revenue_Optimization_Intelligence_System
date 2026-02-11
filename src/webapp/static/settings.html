@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings - Churn Intelligence</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Churn Intelligence</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="customers.html" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span>
+                </a>
+                <a href="analytics.html" class="nav-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="predictions.html" class="nav-item">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Predictions</span>
+                </a>
+                <a href="settings.html" class="nav-item active">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- TOP BAR -->
+            <div class="top-bar">
+                <h1 class="page-title">
+                    <i class="fas fa-cog"></i>
+                    Settings & Configuration
+                </h1>
+                <div class="user-info">
+                    <span class="user-name">Analytics Team</span>
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS SECTIONS -->
+            <div class="settings-container">
+                <!-- MODEL CONFIGURATION -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <h2>
+                            <i class="fas fa-brain"></i>
+                            Model Configuration
+                        </h2>
+                        <button class="btn-primary">
+                            <i class="fas fa-save"></i>
+                            Save Changes
+                        </button>
+                    </div>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="modelVersion">Model Version</label>
+                            <select id="modelVersion">
+                                <option value="v2.1">v2.1 (Current)</option>
+                                <option value="v2.0">v2.0</option>
+                                <option value="v1.9">v1.9</option>
+                            </select>
+                            <span class="setting-description">Select the prediction model version</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="confidenceThreshold">Confidence Threshold (%)</label>
+                            <input type="number" id="confidenceThreshold" value="75" min="0" max="100">
+                            <span class="setting-description">Minimum confidence for predictions</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="riskThresholdHigh">High Risk Threshold (%)</label>
+                            <input type="number" id="riskThresholdHigh" value="70" min="0" max="100">
+                            <span class="setting-description">Churn probability for HIGH risk</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="riskThresholdMedium">Medium Risk Threshold (%)</label>
+                            <input type="number" id="riskThresholdMedium" value="40" min="0" max="100">
+                            <span class="setting-description">Churn probability for MEDIUM risk</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API CONFIGURATION -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <h2>
+                            <i class="fas fa-plug"></i>
+                            API Configuration
+                        </h2>
+                        <button class="btn-secondary">
+                            <i class="fas fa-sync"></i>
+                            Test Connection
+                        </button>
+                    </div>
+                    <div class="settings-grid">
+                        <div class="setting-item full-width">
+                            <label for="apiEndpoint">API Endpoint</label>
+                            <input type="text" id="apiEndpoint" value="http://127.0.0.1:8000">
+                            <span class="setting-description">Base URL for the prediction API</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="apiTimeout">Request Timeout (seconds)</label>
+                            <input type="number" id="apiTimeout" value="30" min="5" max="300">
+                            <span class="setting-description">Maximum wait time for API responses</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="retryAttempts">Retry Attempts</label>
+                            <input type="number" id="retryAttempts" value="3" min="0" max="10">
+                            <span class="setting-description">Number of retry attempts on failure</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NOTIFICATION SETTINGS -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <h2>
+                            <i class="fas fa-bell"></i>
+                            Notification Settings
+                        </h2>
+                    </div>
+                    <div class="settings-grid">
+                        <div class="setting-item toggle-item">
+                            <div class="toggle-header">
+                                <label>Email Notifications</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="emailNotif" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <span class="setting-description">Receive email alerts for high-risk customers</span>
+                        </div>
+                        <div class="setting-item toggle-item">
+                            <div class="toggle-header">
+                                <label>Daily Reports</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="dailyReports" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <span class="setting-description">Get daily summary reports</span>
+                        </div>
+                        <div class="setting-item toggle-item">
+                            <div class="toggle-header">
+                                <label>Real-time Alerts</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="realtimeAlerts">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <span class="setting-description">Instant notifications for critical events</span>
+                        </div>
+                        <div class="setting-item full-width">
+                            <label for="emailAddress">Notification Email</label>
+                            <input type="email" id="emailAddress" value="team@analytics.com">
+                            <span class="setting-description">Email address for notifications</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DISPLAY PREFERENCES -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <h2>
+                            <i class="fas fa-palette"></i>
+                            Display Preferences
+                        </h2>
+                    </div>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="theme">Theme</label>
+                            <select id="theme">
+                                <option value="dark" selected>Dark Mode</option>
+                                <option value="light">Light Mode</option>
+                                <option value="auto">Auto (System)</option>
+                            </select>
+                            <span class="setting-description">Choose your preferred theme</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="pageSize">Items Per Page</label>
+                            <select id="pageSize">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                            <span class="setting-description">Default rows in tables</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="currency">Currency Format</label>
+                            <select id="currency">
+                                <option value="INR" selected>Indian Rupee (₹)</option>
+                                <option value="USD">US Dollar ($)</option>
+                                <option value="EUR">Euro (€)</option>
+                            </select>
+                            <span class="setting-description">Currency display format</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="dateFormat">Date Format</label>
+                            <select id="dateFormat">
+                                <option value="DD-MM-YYYY" selected>DD-MM-YYYY</option>
+                                <option value="MM-DD-YYYY">MM-DD-YYYY</option>
+                                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                            </select>
+                            <span class="setting-description">Date display format</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SYSTEM INFORMATION -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <h2>
+                            <i class="fas fa-info-circle"></i>
+                            System Information
+                        </h2>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Application Version</span>
+                            <span class="info-value">2.1.0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Model Last Updated</span>
+                            <span class="info-value">2026-02-05</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Database Status</span>
+                            <span class="info-value status-connected">
+                                <i class="fas fa-check-circle"></i> Connected
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">API Status</span>
+                            <span class="info-value status-connected">
+                                <i class="fas fa-check-circle"></i> Active
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DANGER ZONE -->
+                <div class="settings-section danger-zone">
+                    <div class="section-header">
+                        <h2>
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Danger Zone
+                        </h2>
+                    </div>
+                    <div class="danger-actions">
+                        <div class="danger-action">
+                            <div>
+                                <h4>Clear Prediction Cache</h4>
+                                <p>Remove all cached prediction results</p>
+                            </div>
+                            <button class="btn-danger">
+                                <i class="fas fa-trash"></i>
+                                Clear Cache
+                            </button>
+                        </div>
+                        <div class="danger-action">
+                            <div>
+                                <h4>Reset to Defaults</h4>
+                                <p>Restore all settings to factory defaults</p>
+                            </div>
+                            <button class="btn-danger">
+                                <i class="fas fa-undo"></i>
+                                Reset Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Save button handler
+        document.querySelectorAll('.btn-primary').forEach(btn => {
+            btn.addEventListener('click', function () {
+                alert('Settings saved successfully!');
+            });
+        });
+
+        // Test connection handler
+        document.querySelector('.btn-secondary').addEventListener('click', function () {
+            alert('Connection test successful! API is responding.');
+        });
+    </script>
+</body>
+
+</html>

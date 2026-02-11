@@ -2,288 +2,179 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Churn Command Center</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Churn Intelligence Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
 </head>
 
 <body>
-    <div class="dashboard-wrapper">
-        <!-- Sidebar Navigation -->
-        <nav class="sidebar">
-            <div class="logo">
-                <div class="logo-icon">⚡</div>
-                <span>ChurnCmd</span>
-            </div>
-            <ul class="nav-links">
-                <li class="active" onclick="switchTab('dashboard')">
-                    <a href="#">📊 Overview</a>
-                </li>
-                <li onclick="switchTab('predict')">
-                    <a href="#">🧠 Live Predictor</a>
-                </li>
-                <li onclick="switchTab('customers')">
-                    <a href="#">👥 Customers</a>
-                </li>
-                <li onclick="switchTab('architecture')">
-                    <a href="#">⚙️ System</a>
-                </li>
-            </ul>
-            <div class="user-profile">
-                <div class="avatar">DA</div>
-                <div class="user-info">
-                    <span class="name">Admin</span>
-                    <span class="role">Data Sci</span>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Churn Intelligence</span>
                 </div>
             </div>
-        </nav>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item active">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="customers.html" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span>
+                </a>
+                <a href="analytics.html" class="nav-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="predictions.html" class="nav-item">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Predictions</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </aside>
 
-        <!-- Main Content -->
+        <!-- MAIN CONTENT -->
         <main class="main-content">
-
-            <!-- VIEW: DASHBOARD -->
-            <div id="view-dashboard" class="view-section active">
-                <header class="top-bar">
-                    <div class="page-title">
-                        <h1>Command Center</h1>
-                        <p>Real-time Intelligence System v2.0</p>
-                    </div>
-                </header>
-
-                <div id="error-banner" class="error-banner" style="display: none;">
-                    ⚠️ <strong>Connection Error:</strong> Ensure backend is running.
-                </div>
-
-                <!-- KPI Cards -->
-                <div class="kpi-grid">
-                    <div class="kpi-card highlight-card">
-                        <div class="kpi-icon">💰</div>
-                        <div class="kpi-info">
-                            <h3>Total Revenue</h3>
-                            <div class="value" id="total-revenue">--</div>
-                        </div>
-                    </div>
-                    <div class="kpi-card danger-card">
-                        <div class="kpi-icon">⚠️</div>
-                        <div class="kpi-info">
-                            <h3>Revenue at Risk</h3>
-                            <div class="value" id="revenue-at-risk">--</div>
-                        </div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon">📉</div>
-                        <div class="kpi-info">
-                            <h3>Churn Rate</h3>
-                            <div class="value" id="churn-rate">--%</div>
-                        </div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon">🎯</div>
-                        <div class="kpi-info">
-                            <h3>Model Accuracy</h3>
-                            <div class="value">92%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts Grid -->
-                <div class="charts-grid section-grid">
-                    <div class="card chart-card">
-                        <div class="card-header">
-                            <h2>Risk Distribution</h2>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="riskDistChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="card chart-card wide">
-                        <div class="card-header">
-                            <h2>Churn by Contract</h2>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="segmentChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="charts-grid section-grid">
-                    <div class="card chart-card">
-                        <div class="card-header">
-                            <h2>Model Diagnostics</h2>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="modelRadarChart"></canvas>
-                        </div>
+            <!-- TOP BAR -->
+            <div class="top-bar">
+                <h1 class="page-title">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard Overview
+                </h1>
+                <div class="user-info">
+                    <span class="user-name">Analytics Team</span>
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
                     </div>
                 </div>
             </div>
 
-            <!-- VIEW: LIVE PREDICTOR -->
-            <div id="view-predict" class="view-section" style="display: none;">
-                <header class="top-bar">
-                    <div class="page-title">
-                        <h1>Live Predictor</h1>
-                        <p>Manual inference interface for customer risk scoring.</p>
+            <!-- KPI SECTION -->
+            <div class="kpi-container">
+                <div class="kpi-card">
+                    <div class="kpi-icon purple">
+                        <i class="fas fa-database"></i>
                     </div>
-                </header>
-
-                <div class="predict-layout">
-                    <!-- Form -->
-                    <div class="card form-card">
-                        <h2>📝 Customer Details</h2>
-                        <form id="predict-form">
-                            <div class="form-grid">
-                                <div class="input-group">
-                                    <label>Customer ID</label>
-                                    <input type="text" name="customer_id" placeholder="e.g. CUST-9999" required
-                                        value="TEST-001">
-                                </div>
-                                <div class="input-group">
-                                    <label>Est. Annual Revenue ($)</label>
-                                    <input type="number" name="revenue" placeholder="5000" required value="4500">
-                                </div>
-                                <div class="input-group">
-                                    <label>Monthly Charges ($)</label>
-                                    <input type="number" name="monthly_charges" placeholder="85" required value="95.5">
-                                </div>
-                                <div class="input-group">
-                                    <label>Tenure (Months)</label>
-                                    <input type="number" name="tenure" placeholder="12" required value="4">
-                                </div>
-                                <div class="input-group">
-                                    <label>Contract Type</label>
-                                    <select name="contract">
-                                        <option value="Month-to-month">Month-to-month</option>
-                                        <option value="One year">One year</option>
-                                        <option value="Two year">Two year</option>
-                                    </select>
-                                </div>
-                                <div class="input-group">
-                                    <label>Gender</label>
-                                    <select name="gender">
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                    </select>
-                                </div>
-                                <div class="input-group">
-                                    <label>Senior Citizen</label>
-                                    <select name="seniorcitizen">
-                                        <option value="No">No</option>
-                                        <option value="Yes">Yes</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn-primary btn-block btn-lg">⚡ Analyze Risk</button>
-                        </form>
+                    <div class="kpi-content">
+                        <h3>Total Predictions</h3>
+                        <p id="totalPredictions">-</p>
+                        <span class="kpi-label">Records Analyzed</span>
                     </div>
-
-                    <!-- Result -->
-                    <div class="card result-card hidden" id="prediction-result">
-                        <div class="result-header">
-                            <h2>Analysis Result</h2>
-                            <span class="timestamp">Just now</span>
-                        </div>
-
-                        <div class="score-display">
-                            <div class="score-ring">
-                                <svg viewBox="0 0 36 36" class="circular-chart">
-                                    <path class="circle-bg"
-                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                    <path id="score-circle" class="circle" stroke-dasharray="0, 100"
-                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                </svg>
-                                <div class="percentage">
-                                    <span id="pred-prob">--%</span>
-                                    <small>Churn Prob</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="risk-badge-lg" id="pred-risk">Analyzing...</div>
-
-                        <div class="impact-stats">
-                            <div class="stat">
-                                <span class="label">Potential Loss</span>
-                                <span class="val danger" id="pred-loss">$0</span>
-                            </div>
-                            <div class="stat">
-                                <span class="label">Priority Score</span>
-                                <span class="val" id="pred-priority">0.0</span>
-                            </div>
-                        </div>
-
-                        <div class="alert-box">
-                            ℹ️ Prediction saved to database.
-                        </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon amber">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>Avg Churn Probability</h3>
+                        <p id="avgChurn">-</p>
+                        <span class="kpi-label">Expected Rate</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon red">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>High Risk Customers</h3>
+                        <p id="highRisk">-</p>
+                        <span class="kpi-label">Immediate Action Required</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon emerald">
+                        <i class="fas fa-rupee-sign"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>Total Revenue at Risk</h3>
+                        <p id="revenueRisk">-</p>
+                        <span class="kpi-label">Potential Loss</span>
                     </div>
                 </div>
             </div>
 
-            <!-- VIEW: CUSTOMERS -->
-            <div id="view-customers" class="view-section" style="display: none;">
-                <header class="top-bar">
-                    <div class="page-title">
-                        <h1>High Risk Customers</h1>
+            <!-- CHARTS SECTION -->
+            <div class="charts-container">
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <h3>
+                            <i class="fas fa-pie-chart"></i>
+                            Risk Distribution
+                        </h3>
+                        <span class="chart-subtitle">Customer segmentation by risk level</span>
                     </div>
-                </header>
-                <div class="card table-card">
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Customer ID</th>
-                                    <th>Risk Level</th>
-                                    <th>Churn Prob</th>
-                                    <th>Revenue at Risk</th>
-                                    <th>Total Value</th>
-                                </tr>
-                            </thead>
-                            <tbody id="customer-table-body">
-                                <!-- Populated by JS -->
-                            </tbody>
-                        </table>
+                    <div class="chart-content">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <h3>
+                            <i class="fas fa-chart-bar"></i>
+                            Top Customers by Priority Score
+                        </h3>
+                        <span class="chart-subtitle">Priority-ranked customer analysis</span>
+                    </div>
+                    <div class="chart-content">
+                        <canvas id="priorityChart"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- VIEW: ARCHITECTURE -->
-            <div id="view-architecture" class="view-section" style="display: none;">
-                <div class="card architecture-card">
-                    <div class="mermaid-container">
-                        <div class="mermaid">
-                            graph LR
-                            subgraph Interface
-                            UA[User Action] --> UI[Dashboard UI]
-                            UI --> API{Unified API}
-                            end
-                            subgraph Backend_Logic
-                            API -->|Get Stats| SQL[(MySQL)]
-                            API -->|Predict| ML[ML Model]
-                            ML -->|Save Result| SQL
-                            end
-                            classDef ui fill:#8b5cf6,stroke:#5b21b6,color:white;
-                            classDef db fill:#3b82f6,stroke:#1e3a8a,color:white;
-                            class UA,UI ui;
-                            class SQL,API,ML db;
-                        </div>
+            <!-- TABLE SECTION -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h2>
+                        <i class="fas fa-fire"></i>
+                        High Priority Customers
+                    </h2>
+                    <div class="table-actions">
+                        <button class="btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                        <button class="btn-primary">
+                            <i class="fas fa-filter"></i>
+                            Filter
+                        </button>
                     </div>
                 </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Customer ID</th>
+                                <th>Risk Level</th>
+                                <th>Churn Probability</th>
+                                <th>Expected Loss</th>
+                                <th>Priority Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTable">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
-
         </main>
     </div>
+
     <script src="script.js"></script>
-    <script>
-        mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' });
-    </script>
 </body>
 
 </html>
