@@ -2,6 +2,7 @@ import pandas as pd
 import joblib
 import json
 import sys
+from pathlib import Path
 from sklearn.metrics import (
     classification_report,
     confusion_matrix,
@@ -10,8 +11,10 @@ from sklearn.metrics import (
     recall_score
 )
 from sklearn.model_selection import train_test_split
-from pathlib import Path
 
+# ==============================
+# PATH CONFIGURATION
+# ==============================
 BASE_DIR = Path(__file__).resolve().parent.parent
 MODEL_DIR = BASE_DIR / "models"
 DATA_DIR = BASE_DIR / "data" / "processed"
@@ -20,15 +23,32 @@ DATA_PATH = DATA_DIR / "customer_features.csv"
 MODEL_PATH = MODEL_DIR / "churn_model.pkl"
 SCALER_PATH = MODEL_DIR / "scaler.pkl"
 FEATURE_LIST_PATH = MODEL_DIR / "feature_list.json"
+
 TARGET_COL = "churn"
+RANDOM_STATE = 42
 
 
+# ==============================
+# MAIN EVALUATION
+# ==============================
 def evaluate_model():
 
     print("Loading data...")
     df = pd.read_csv(DATA_PATH)
 
-    X = df.drop(columns=[TARGET_COL])
+    # Normalize column names
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.lower()
+        .str.replace(" ", "_")
+    )
+
+    # Map target if needed
+    if df[TARGET_COL].dtype == object:
+        df[TARGET_COL] = df[TARGET_COL].map({'yes': 1, 'no': 0})
+
+    X = df.drop(columns=[TARGET_COL], errors="ignore")
     y = df[TARGET_COL]
 
     # Encode categoricals
@@ -40,22 +60,33 @@ def evaluate_model():
 
     X = X.reindex(columns=feature_list, fill_value=0)
 
-    # Train/test split (same random_state as training)
+    # Train/test split (same as training)
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+        X,
+        y,
+        test_size=0.2,
+        random_state=RANDOM_STATE,
+        stratify=y
     )
 
-    print("Loading model & scaler...")
-    scaler = joblib.load(SCALER_PATH)
+    print("Loading model...")
     model = joblib.load(MODEL_PATH)
 
-    X_test_scaled = scaler.transform(X_test)
+    # Apply scaler only if it exists
+    if SCALER_PATH.exists():
+        print("Scaler found. Applying scaling...")
+        scaler = joblib.load(SCALER_PATH)
+        X_test = scaler.transform(X_test)
+    else:
+        print("No scaler found. Using raw features (tree-based model).")
 
     print("Running predictions...")
-    y_pred = model.predict(X_test_scaled)
-    y_proba = model.predict_proba(X_test_scaled)[:, 1]
+    y_proba = model.predict_proba(X_test)[:, 1]
+    y_pred = (y_proba >= 0.5).astype(int)
 
-    # Metrics
+    # ==============================
+    # METRICS
+    # ==============================
     roc_auc = roc_auc_score(y_test, y_proba)
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
@@ -64,8 +95,8 @@ def evaluate_model():
     print("MODEL EVALUATION METRICS")
     print("==============================")
     print(f"ROC-AUC: {roc_auc:.4f}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall: {recall:.4f}")
+    print(f"Precision (0.5 threshold): {precision:.4f}")
+    print(f"Recall (0.5 threshold): {recall:.4f}")
 
     print("\nConfusion Matrix:")
     print(confusion_matrix(y_test, y_pred))
@@ -73,7 +104,19 @@ def evaluate_model():
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred))
 
-    # 🚨 CI Performance Gate
+    # ==============================
+    # THRESHOLD ANALYSIS
+    # ==============================
+    print("\nThreshold Analysis:")
+    for t in [0.4, 0.5, 0.6, 0.7]:
+        y_pred_t = (y_proba >= t).astype(int)
+        print(f"\nThreshold: {t}")
+        print("Precision:", round(precision_score(y_test, y_pred_t), 4))
+        print("Recall:", round(recall_score(y_test, y_pred_t), 4))
+
+    # ==============================
+    # CI PERFORMANCE GATE
+    # ==============================
     MIN_ROC_AUC = 0.70
 
     if roc_auc < MIN_ROC_AUC:
@@ -83,5 +126,8 @@ def evaluate_model():
         print("\n✅ Model performance acceptable.")
 
 
+# ==============================
+# ENTRY POINT
+# ==============================
 if __name__ == "__main__":
     evaluate_model()

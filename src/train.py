@@ -65,7 +65,7 @@ def main():
     # -----------------------------
     # DROP ID COLUMN
     # -----------------------------
-    df = df.drop(columns=["customerid"])
+    df = df.drop(columns=["customerid"], errors="ignore")
 
     # -----------------------------
     # FEATURE GROUPS (REAL COLUMNS)
@@ -193,18 +193,6 @@ def main():
     print("✅ Training completed successfully")
     print(f"✅ Selected model: {selected_model}")
     print("📊 Final metrics:", final_metrics)
-
-y_pred_proba = model.predict_proba(X_test)[:, 1]
-y_pred = model.predict(X_test)
-
-roc_auc = roc_auc_score(y_test, y_pred_proba)
-
-print("ROC-AUC:", roc_auc)
-print("\nConfusion Matrix:")
-print(confusion_matrix(y_test, y_pred))
-
-print("\nClassification Report:")
-print(classification_report(y_test, y_pred))
 
 if __name__ == "__main__":
     main()
