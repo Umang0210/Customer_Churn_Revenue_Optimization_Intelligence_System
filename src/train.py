@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score, precision_score, recall_score
 
+from sklearn.metrics import roc_auc_score, classification_report, confusion_matrix
 
 # -----------------------------
 # CONFIG
@@ -188,10 +189,22 @@ def main():
     with open(f"{MODEL_DIR}model_metadata.json", "w") as f:
         json.dump(model_metadata, f, indent=4)
 
+
     print("✅ Training completed successfully")
     print(f"✅ Selected model: {selected_model}")
     print("📊 Final metrics:", final_metrics)
 
+y_pred_proba = model.predict_proba(X_test)[:, 1]
+y_pred = model.predict(X_test)
+
+roc_auc = roc_auc_score(y_test, y_pred_proba)
+
+print("ROC-AUC:", roc_auc)
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
 
 if __name__ == "__main__":
     main()
