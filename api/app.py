@@ -21,7 +21,13 @@ DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_USER = os.getenv("DB_USER", "churn_user")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "StrongPassword123")
 DB_NAME = os.getenv("DB_NAME", "churn_intelligence")
-MODEL_VERSION = os.getenv("MODEL_VERSION", "v1.0")
+MODEL_VERSION = os.getenv("MODEL_VERSION", "v1.1.0")
+
+# ===============================
+# Risk Thresholds (Aligned with Evaluation)
+# ===============================
+HIGH_THRESHOLD = 0.6
+MEDIUM_THRESHOLD = 0.4
 
 # ===============================
 # Logging
@@ -34,7 +40,7 @@ logger = logging.getLogger("churn-api")
 # ===============================
 app = FastAPI(
     title="Churn Intelligence API",
-    version="3.0.0"
+    version="3.1.0"
 )
 
 app.add_middleware(
@@ -61,16 +67,20 @@ except Exception as e:
     logger.error(f"Model loading failed: {e}")
     raise RuntimeError("Model could not be loaded.")
 
-try:
+# Load scaler only if exists
+if (MODEL_DIR / "scaler.pkl").exists():
     scaler = joblib.load(MODEL_DIR / "scaler.pkl")
-except:
+    logger.info("Scaler loaded.")
+else:
     scaler = None
+    logger.info("No scaler found. Tree-based model assumed.")
 
+# Load feature list
 try:
     with open(MODEL_DIR / "feature_list.json") as f:
         feature_list = json.load(f)
 except:
-        feature_list = []
+    feature_list = []
 
 # ===============================
 # Database Connection
@@ -147,6 +157,17 @@ def health():
     return {"status": "ok"}
 
 # ===============================
+# Model Info Endpoint
+# ===============================
+@app.get("/model-info")
+def model_info():
+    try:
+        with open(MODEL_DIR / "model_metadata.json") as f:
+            return json.load(f)
+    except:
+        return {"message": "Model metadata not available"}
+
+# ===============================
 # Prediction Endpoint
 # ===============================
 @app.post("/predict")
@@ -159,8 +180,13 @@ def predict(request: ChurnRequest):
         categorical_cols = ["gender", "seniorcitizen", "contract"]
         df_encoded = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
 
-        df_final = df_encoded.reindex(columns=feature_list, fill_value=0) if feature_list else df_encoded
-        X = scaler.transform(df_final) if scaler else df_final
+        df_final = df_encoded.reindex(columns=feature_list, fill_value=0)
+
+        # Apply scaler only if exists
+        if scaler:
+            X = scaler.transform(df_final)
+        else:
+            X = df_final
 
         prob = float(model.predict_proba(X)[0][1])
 
@@ -168,16 +194,20 @@ def predict(request: ChurnRequest):
         logger.error(f"Inference failed: {e}")
         raise HTTPException(status_code=500, detail="Model inference failed")
 
-    # Risk logic
-    if prob >= 0.7:
+    # ===============================
+    # Risk Logic (Aligned with Evaluation)
+    # ===============================
+    if prob >= HIGH_THRESHOLD:
         risk = "HIGH"
-    elif prob >= 0.4:
+    elif prob >= MEDIUM_THRESHOLD:
         risk = "MEDIUM"
     else:
         risk = "LOW"
 
     expected_loss = round(prob * request.revenue, 2)
-    priority_score = round(expected_loss * prob, 2)
+
+    # Priority aligned with business logic
+    priority_score = expected_loss
 
     result = {
         "customer_id": request.customer_id,
@@ -222,7 +252,11 @@ def priority_customers():
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT *
+        SELECT customer_id,
+               churn_probability,
+               risk_bucket,
+               expected_revenue_loss,
+               priority_score
         FROM customer_churn_analytics
         ORDER BY priority_score DESC
         LIMIT 20
