@@ -1,8 +1,7 @@
 {
     "model_version": "v1.1.0",
-    "training_date": "2026-02-11 17:54:22",
+    "training_date": "2026-02-12 08:08:51",
     "selected_model": "random_forest",
-    "baseline_model": "logistic_regression",
     "metrics": {
         "logistic_regression": {
             "roc_auc": 0.8282,
@@ -20,8 +19,5 @@
         "precision": 0.541,
         "recall": 0.7406
     },
-    "training_rows": 5634,
-    "test_rows": 1409,
-    "num_features": 7,
-    "selection_reason": "Selected based on superior ROC-AUC while maintaining recall for churn risk identification"
+    "num_features": 7
 }
