@@ -22,3 +22,4 @@ def segment_insights():
     cursor.close()
     conn.close()
     return data
+    

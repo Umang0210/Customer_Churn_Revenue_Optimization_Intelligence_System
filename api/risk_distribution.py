@@ -17,5 +17,4 @@ def risk_distribution():
     data = cursor.fetchall()
     cursor.close()
     conn.close()
-
     return data
