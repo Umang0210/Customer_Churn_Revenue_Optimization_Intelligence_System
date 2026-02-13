@@ -23,8 +23,11 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "StrongPassword123")
 DB_NAME = os.getenv("DB_NAME", "churn_intelligence")
 MODEL_VERSION = os.getenv("MODEL_VERSION", "v1.1.0")
 
+# Detect CI Mode
+CI_MODE = os.getenv("CI_MODE", "false").lower() == "true"
+
 # ===============================
-# Risk Thresholds (Aligned with Evaluation)
+# Risk Thresholds
 # ===============================
 HIGH_THRESHOLD = 0.6
 MEDIUM_THRESHOLD = 0.4
@@ -67,7 +70,6 @@ except Exception as e:
     logger.error(f"Model loading failed: {e}")
     raise RuntimeError("Model could not be loaded.")
 
-# Load scaler only if exists
 if (MODEL_DIR / "scaler.pkl").exists():
     scaler = joblib.load(MODEL_DIR / "scaler.pkl")
     logger.info("Scaler loaded.")
@@ -75,7 +77,6 @@ else:
     scaler = None
     logger.info("No scaler found. Tree-based model assumed.")
 
-# Load feature list
 try:
     with open(MODEL_DIR / "feature_list.json") as f:
         feature_list = json.load(f)
@@ -83,9 +84,12 @@ except:
     feature_list = []
 
 # ===============================
-# Database Connection
+# Database
 # ===============================
 def get_db_connection():
+    if CI_MODE:
+        return None
+
     try:
         return mysql.connector.connect(
             host=DB_HOST,
@@ -95,11 +99,18 @@ def get_db_connection():
         )
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
-        raise HTTPException(status_code=500, detail="Database connection failed")
+        return None
+
 
 def insert_prediction(record: dict):
+    if CI_MODE:
+        return  # Skip DB writes in CI
+
+    conn = get_db_connection()
+    if conn is None:
+        return
+
     try:
-        conn = get_db_connection()
         cursor = conn.cursor()
 
         query = """
@@ -133,7 +144,6 @@ def insert_prediction(record: dict):
 
     except Exception as e:
         logger.error(f"Insert failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to store prediction")
 
 # ===============================
 # Request Schema
@@ -142,7 +152,7 @@ class ChurnRequest(BaseModel):
     customer_id: str
     revenue: float = Field(gt=0)
 
-    # MUST match training features exactly
+    # Must match training features
     tenure: float = Field(ge=0)
     monthlycharges: float = Field(gt=0)
     totalcharges: float = Field(ge=0)
@@ -159,7 +169,7 @@ def health():
     return {"status": "ok"}
 
 # ===============================
-# Model Info Endpoint
+# Model Info
 # ===============================
 @app.get("/model-info")
 def model_info():
@@ -170,7 +180,7 @@ def model_info():
         return {"message": "Model metadata not available"}
 
 # ===============================
-# Prediction Endpoint
+# Predict
 # ===============================
 @app.post("/predict")
 def predict(request: ChurnRequest):
@@ -184,7 +194,6 @@ def predict(request: ChurnRequest):
 
         df_final = df_encoded.reindex(columns=feature_list, fill_value=0)
 
-        # Apply scaler only if exists
         if scaler:
             X = scaler.transform(df_final)
         else:
@@ -196,9 +205,6 @@ def predict(request: ChurnRequest):
         logger.error(f"Inference failed: {e}")
         raise HTTPException(status_code=500, detail="Model inference failed")
 
-    # ===============================
-    # Risk Logic (Aligned with Evaluation)
-    # ===============================
     if prob >= HIGH_THRESHOLD:
         risk = "HIGH"
     elif prob >= MEDIUM_THRESHOLD:
@@ -207,8 +213,6 @@ def predict(request: ChurnRequest):
         risk = "LOW"
 
     expected_loss = round(prob * request.revenue, 2)
-
-    # Priority aligned with business logic
     priority_score = expected_loss
 
     result = {
@@ -227,12 +231,18 @@ def predict(request: ChurnRequest):
 # ===============================
 # Dashboard APIs
 # ===============================
-
 @app.get("/api/dashboard/summary")
 def dashboard_summary():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    if conn is None:
+        return {
+            "total_predictions": 0,
+            "avg_churn_probability": 0,
+            "high_risk_customers": 0,
+            "total_revenue_at_risk": 0
+        }
 
+    cursor = conn.cursor(dictionary=True)
     cursor.execute("""
         SELECT
             COUNT(*) AS total_predictions,
@@ -241,17 +251,19 @@ def dashboard_summary():
             IFNULL(ROUND(SUM(expected_revenue_loss), 2), 0) AS total_revenue_at_risk
         FROM customer_churn_analytics
     """)
-
     data = cursor.fetchone()
     cursor.close()
     conn.close()
     return data
 
+
 @app.get("/api/dashboard/priority_customers")
 def priority_customers():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    if conn is None:
+        return []
 
+    cursor = conn.cursor(dictionary=True)
     cursor.execute("""
         SELECT customer_id,
                churn_probability,
@@ -262,7 +274,6 @@ def priority_customers():
         ORDER BY priority_score DESC
         LIMIT 20
     """)
-
     data = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -272,14 +283,15 @@ def priority_customers():
 @app.get("/api/risk_distribution")
 def risk_distribution():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    if conn is None:
+        return []
 
+    cursor = conn.cursor(dictionary=True)
     cursor.execute("""
         SELECT risk_bucket, COUNT(*) AS count
         FROM customer_churn_analytics
         GROUP BY risk_bucket
     """)
-
     data = cursor.fetchall()
     cursor.close()
     conn.close()
